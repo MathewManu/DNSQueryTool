@@ -19,7 +19,7 @@ public class Dnsquery {
 
 	private static Dig getDigQuery(String[] args) {
 		
-		String name = "www.cs.stonybrook.edu.";
+		String name = "www.cs.stonybrook.edu";
 		String type = null;
 		
 		return new Dig.QueryBuilder(name)

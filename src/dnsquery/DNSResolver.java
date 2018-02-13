@@ -24,12 +24,10 @@ public class DNSResolver {
 			Message response = sendQuery(digQuery);
 			responseHandler(response);
 		} catch (IOException e) {
-
-			e.printStackTrace();
+			System.out.println("ERROR: " + digQuery.getURL());
 		}
 
 	}
-
 
 	/*
 	 * create a newQuery using the user entered URL send the query to the server
@@ -41,21 +39,16 @@ public class DNSResolver {
 
 	}
 
-/*	private Message sendQuery(Dig digQuery) throws IOException {
-		Message msg = Message.newQuery(Record.newRecord(getName(), Type.A, DClass.IN));
-		return digQuery.getResolver().send(msg);
-
-	}*/
 	private void responseHandler(Message res) {
 
 		List<Record> myList = new ArrayList<>();
 		int answerSectionCount = res.getHeader().getCount(Section.ANSWER);
-		System.out.println("count is :" + answerSectionCount);
+		//System.out.println("count is :" + answerSectionCount);
 
 		if (answerSectionCount == 0) {
 			Record[] rec = res.getSectionArray(Section.AUTHORITY);
 			for (int i = 0; i < rec.length; i++) {
-				System.out.println(rec[i].getAdditionalName());
+				//System.out.println(rec[i].getAdditionalName());
 				myList.add(rec[i]);
 			}
 			// as of now invoke with first result.
@@ -70,17 +63,32 @@ public class DNSResolver {
 			 * Answer section only has CNAME. In this case, we would need to again query for
 			 * the CNAME recursively. eg: www.cs.stonybrook.edu.
 			 */
-
+			
 			Record[] rec = res.getSectionArray(Section.ANSWER);
 			for (int i = 0; i < rec.length; i++) {
+				if (answerSectionCount == 1 && rec[i].getType() == Type.CNAME) {
+					String cnameLine = rec[i].toString();
+					String cname = cnameLine.substring(cnameLine.indexOf("CNAME") + 5).trim();
+					System.out.println("found!!!! " + cname);
+					String cnameresponse = handleCNAMEresolve(cname);
+					System.out.println("---> : "  + cnameresponse);
+				}
 				System.out.println(rec[i]);
-				// System.out.println(rec[i].getAdditionalName());
 				myList.add(rec[i]);
 			}
 		}
 
 	}
 	
+	private String  handleCNAMEresolve(String cname) {
+		
+		Dig cnameQuery = new Dig.QueryBuilder(cname).build();
+		
+		return cname;
+		// TODO Auto-generated method stub
+		
+	}
+
 	private void invokeNextLevelQuery(String nextLevelUrl) {
 		System.out.println("====Next Leve========");
 		
@@ -115,6 +123,10 @@ public class DNSResolver {
 	}
 
 	private void setName(String url) {
+		/* append . if url is not ending with ." */
+		if (url.substring(url.length()-1) != ".") {
+			url += ".";
+		}
 		try {
 			name = new Name(url);
 		} catch (TextParseException e) {
