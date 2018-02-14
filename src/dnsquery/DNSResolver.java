@@ -17,12 +17,13 @@ import org.xbill.DNS.Type;
 public class DNSResolver {
 
 	private Name name = null;
+	private static String CNAMEResponse = null;
 	
 	public void resolve(Dig digQuery) {
 		setName(digQuery.getURL());
 		try {
 			Message response = sendQuery(digQuery);
-			responseHandler(response);
+			responseHandler(response, digQuery.getIsCnameMsg());
 		} catch (IOException e) {
 			System.out.println("ERROR: " + digQuery.getURL());
 		}
@@ -39,7 +40,7 @@ public class DNSResolver {
 
 	}
 
-	private void responseHandler(Message res) {
+	private void responseHandler(Message res, boolean isCnameMsg) {
 
 		List<Record> myList = new ArrayList<>();
 		int answerSectionCount = res.getHeader().getCount(Section.ANSWER);
@@ -53,7 +54,8 @@ public class DNSResolver {
 			}
 			// as of now invoke with first result.
 			// getAdditionalName gives the address from the result.
-			invokeNextLevelQuery(myList.get(0).getAdditionalName().toString());
+			System.out.println(myList.get(0).getAdditionalName().toString());
+			invokeNextLevelQuery(myList.get(0).getAdditionalName().toString(), isCnameMsg);
 
 		} else {
 			System.out.println("answer section found !!!!");
@@ -64,14 +66,26 @@ public class DNSResolver {
 			 * the CNAME recursively. eg: www.cs.stonybrook.edu.
 			 */
 			
+		
+			
 			Record[] rec = res.getSectionArray(Section.ANSWER);
+		
 			for (int i = 0; i < rec.length; i++) {
 				if (answerSectionCount == 1 && rec[i].getType() == Type.CNAME) {
 					String cnameLine = rec[i].toString();
 					String cname = cnameLine.substring(cnameLine.indexOf("CNAME") + 5).trim();
 					System.out.println("found!!!! " + cname);
+					
 					String cnameresponse = handleCNAMEresolve(cname);
 					System.out.println("---> : "  + cnameresponse);
+				}
+				if (isCnameMsg == true) {
+					/* type A */
+					System.out.println("---CNAME resolved !!!!");
+					//System.out.println(rec[i]);
+					CNAMEResponse = rec[i].toString();
+					//System.out.println(rec[i].toString());
+					return;
 				}
 				System.out.println(rec[i]);
 				myList.add(rec[i]);
@@ -82,15 +96,18 @@ public class DNSResolver {
 	
 	private String  handleCNAMEresolve(String cname) {
 		
-		Dig cnameQuery = new Dig.QueryBuilder(cname).build();
-		
-		return cname;
-		// TODO Auto-generated method stub
-		
+		String cnameResponseCopy = null;
+		Dig cnameQuery = new Dig.QueryBuilder(cname).withCNameType(true).build();
+		/*DNSResolver resolver = */new DNSResolver().resolve(cnameQuery);
+		if (null != CNAMEResponse)
+			cnameResponseCopy = CNAMEResponse;
+		/* setting back to null */
+		CNAMEResponse = null;
+		return cnameResponseCopy;
 	}
 
-	private void invokeNextLevelQuery(String nextLevelUrl) {
-		System.out.println("====Next Leve========");
+	private void invokeNextLevelQuery(String nextLevelUrl, boolean isCnameMsg) {
+		//System.out.println("====Next Leve========");
 		
 		Message res = null;
 		Message req = Message.newQuery(Record.newRecord(getName(), Type.A, DClass.IN));
@@ -103,7 +120,7 @@ public class DNSResolver {
 		} catch (IOException e) {
 			System.out.println("ERROR: while sending : " + getName() + " " + nextLevelUrl);
 		}
-		responseHandler(res);
+		responseHandler(res, isCnameMsg);
 
 	}
 	
@@ -124,13 +141,13 @@ public class DNSResolver {
 
 	private void setName(String url) {
 		/* append . if url is not ending with ." */
-		if (url.substring(url.length()-1) != ".") {
+		if (!url.substring(url.length() - 1).equals(".")) {
 			url += ".";
 		}
 		try {
 			name = new Name(url);
 		} catch (TextParseException e) {
-			System.out.println("ERROR: " + url);
+			System.out.println("ERROR while setting Name for URL : " + url);
 		}
 
 	}
