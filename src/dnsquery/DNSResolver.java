@@ -33,7 +33,7 @@ public class DNSResolver {
 		}
 
 	}
-
+	
 	/*
 	 * create a newQuery using the user entered URL send the query to the server
 	 * based on the resolver. return : response Message from the server.
