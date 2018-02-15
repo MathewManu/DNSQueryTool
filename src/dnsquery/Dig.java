@@ -3,6 +3,7 @@ package dnsquery;
 import java.net.UnknownHostException;
 
 import org.xbill.DNS.SimpleResolver;
+import org.xbill.DNS.Type;
 
 /* 
  * Builder class for Dig object.
@@ -16,7 +17,8 @@ public class Dig {
 
 	private final String URL;
 	private final SimpleResolver resolver;
-	private String type;
+	private int type;
+	private String digType;
 	private boolean isCnameMsg;
 
 	private Dig(QueryBuilder queryBuilder) {
@@ -24,6 +26,7 @@ public class Dig {
 		resolver = queryBuilder.resolver;
 		type = queryBuilder.type;
 		isCnameMsg = queryBuilder.isCnameMsg;
+		digType = queryBuilder.digType;
 	}
 
 	public String getURL() {
@@ -34,8 +37,11 @@ public class Dig {
 		return isCnameMsg;
 	}
 
-	public String getType() {
+	public int getType() {
 		return type;
+	}
+	public String getDigType() {
+		return digType;
 	}
 
 	public SimpleResolver getResolver() {
@@ -46,7 +52,8 @@ public class Dig {
 	public static class QueryBuilder {
 
 		private final String URL;
-		private String type;
+		private int type;
+		private String digType;
 		private SimpleResolver resolver;
 		private boolean isCnameMsg = false;
 
@@ -56,7 +63,20 @@ public class Dig {
 		}
 
 		public QueryBuilder withType(String type) {
-			this.type = type;
+			digType = type;
+			if (type == null) {
+				this.type = Type.A;
+				return this;
+			}
+			if (type.equalsIgnoreCase("A"))
+				this.type = Type.A;
+			else if (type.equalsIgnoreCase("NS"))
+				this.type = Type.NS;
+			else if (type.equalsIgnoreCase("MX"))
+				this.type = Type.MX;
+			else 
+				this.type = Type.A;
+			
 			return this;
 		}
 
@@ -67,6 +87,10 @@ public class Dig {
 
 		/* return Dig object with Querybuilder arg */
 		public Dig build() {
+			DigResponse.setType(digType);
+			
+			if (DigResponse.getURL() == null)
+				DigResponse.setURL(URL);
 			return new Dig(this);
 		}
 

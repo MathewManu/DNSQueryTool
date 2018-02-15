@@ -18,6 +18,7 @@ public class DNSResolver {
 
 	private Name name = null;
 	private static DigResponse digReponse = new DigResponse();
+	private static String digType;
 	
 	public static DigResponse getDigReponse() {
 		return digReponse;
@@ -25,6 +26,8 @@ public class DNSResolver {
 
 	public void resolve(Dig digQuery) {
 		setName(digQuery.getURL());
+		setType(digQuery.getDigType());
+		//System.out.println("type is ..." +getType() +" " + getName());
 		try {
 			Message response = sendQuery(digQuery);
 			responseHandler(response, digQuery.getIsCnameMsg());
@@ -39,7 +42,7 @@ public class DNSResolver {
 	 * based on the resolver. return : response Message from the server.
 	 */
 	private Message sendQuery(Dig digQuery) throws IOException {
-		Message msg = Message.newQuery(Record.newRecord(getName(), Type.A, DClass.IN));
+		Message msg = Message.newQuery(Record.newRecord(getName(), getType(), DClass.IN));
 		return digQuery.getResolver().send(msg);
 
 	}
@@ -61,31 +64,49 @@ public class DNSResolver {
 			invokeNextLevelQuery(myList.get(0).getAdditionalName().toString(), isCnameMsg);
 
 		} else {
-			System.out.println("answer section found !!!!");
+			//System.out.println("answer section found !!!!");
 			/*
 			 * There could be cases like the following. 1. Answer section has Both CNAME & A
 			 * record. In that case, returning the A record IP should be good enough 2.
 			 * Answer section only has CNAME. In this case, we would need to again query for
 			 * the CNAME recursively. eg: www.cs.stonybrook.edu.
 			 */
+			
+			/* in case of NS & MX records, CNAME need not be resolved further 
+			 * output answer section. and any Authority sections present.
+			 */
 			Record[] rec = res.getSectionArray(Section.ANSWER);
+			if (getDigType() != null && (getDigType().equalsIgnoreCase("MX") || getDigType().equalsIgnoreCase("NS"))) {
+				//System.out.println("NS OR MX");
+				/* adding answer section */
+				for (int i=0; i<rec.length;i++) {
+					digReponse.addCnameResponseAns(rec[i].toString());
+				}
+				
+				Record[] auth = res.getSectionArray(Section.AUTHORITY);
+				for (int i=0; i<auth.length;i++) {
+					digReponse.addCnameResponseAuth(auth[i].toString());
+				}
+				return;
+			}
 		
 			for (int i = 0; i < rec.length; i++) {
 				if (answerSectionCount == 1 && rec[i].getType() == Type.CNAME) {
 					String cnameLine = rec[i].toString();
 					String cname = cnameLine.substring(cnameLine.indexOf("CNAME") + 5).trim();
-					System.out.println("found!!!! " + cname);
+					//System.out.println("found!!!! " + cname);
 					
 					handleCNAMEresolve(cname);
 				}
 				if (isCnameMsg == true) {
 					/* type A */
-					digReponse.addCnameResponse(rec[i].toString());
+					digReponse.addCnameResponseAns(rec[i].toString());
 					return;
 				}
-				System.out.println("------->>>>");
-				System.out.println(rec[i]);
-				myList.add(rec[i]);
+				//System.out.println("------->>>>###");
+				//System.out.println(rec[i]);
+				digReponse.addCnameResponseAns(rec[i].toString());
+				//myList.add(rec[i]);
 			}
 		}
 
@@ -93,12 +114,12 @@ public class DNSResolver {
 	
 	private void handleCNAMEresolve(String cname) {
 		
-		Dig cnameQuery = new Dig.QueryBuilder(cname).withCNameType(true).build();
+		Dig cnameQuery = new Dig.QueryBuilder(cname).withCNameType(true).withType(getDigType()).build();
 		new DNSResolver().resolve(cnameQuery);	
 	}
 
 	private void invokeNextLevelQuery(String nextLevelUrl, boolean isCnameMsg) {
-		
+		//System.out.println("Level --->>> ");
 		Message res = null;
 		Message req = Message.newQuery(Record.newRecord(getName(), Type.A, DClass.IN));
 		SimpleResolver resolver = getResolver(nextLevelUrl);
@@ -141,5 +162,25 @@ public class DNSResolver {
 		}
 
 	}
+	
+	private void setType(String type) {
+		digType = type;
+	}
+
+	private static String getDigType() {
+		return digType;
+	}
+	public static int getType() {
+		if (digType == null)
+			return Type.A;
+		if (digType.equalsIgnoreCase("A"))
+			return Type.A;
+		else if (digType.equalsIgnoreCase("MX"))
+			return Type.MX;
+		else if (digType.equalsIgnoreCase("NS"))
+			return Type.NS;
+		return Type.A;
+	}
+
 
 }

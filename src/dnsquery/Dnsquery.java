@@ -1,41 +1,40 @@
 package dnsquery;
 
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.List;
-
 import org.xbill.DNS.*;
 
 public class DnsQuery {
 
 	public static void main(String[] args) throws TextParseException {
+
+		if (args.length == 0) {
+			printUsageAndExit();
+		}
+
+		DigResponse.init();
+
 		DNSResolver resolver = new DNSResolver();
-		long start = System.currentTimeMillis();
 		resolver.resolve(getDigQuery(args));
 
-		DNSResolver.getDigReponse();
-		// System.out.println("CALLER!!");
+		DigResponse.printConsole();
+	}
 
-		List<String> l = DigResponse.getCNameResponseList();
-		for (int i = l.size() - 1; i >= 0; i--)
-			System.out.println(l.get(i));
-
-		long end = System.currentTimeMillis();
-
-		System.out.println("\nQuery time : " + (end - start) + " msec");
-
-		DateFormat dateFormat = new SimpleDateFormat("yyyy/dd/MM HH:mm:ss");
-		Date date = new Date();
-		System.out.println("WHEN : " + dateFormat.format(date));
+	private static void printUsageAndExit() {
+		System.out.println("Usage: ./mydig <hostname> <type>");
+		System.exit(0);
 	}
 
 	private static Dig getDigQuery(String[] args) {
 
-		String name = "www.netapp.com";
+		String name = null;
 		String type = null;
+		if (args.length == 1)
+			name = args[0];
+		else if (args.length == 2) {
+			name = args[0];
+			type = args[1];
+		}
 
 		return new Dig.QueryBuilder(name).withType(type).build();
-
 	}
+
 }
