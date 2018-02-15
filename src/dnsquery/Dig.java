@@ -13,6 +13,7 @@ import org.xbill.DNS.Type;
  * 
  * Also select root server as well.
  */
+
 public class Dig {
 
 	private final String URL;
@@ -40,6 +41,7 @@ public class Dig {
 	public int getType() {
 		return type;
 	}
+
 	public String getDigType() {
 		return digType;
 	}
@@ -74,9 +76,9 @@ public class Dig {
 				this.type = Type.NS;
 			else if (type.equalsIgnoreCase("MX"))
 				this.type = Type.MX;
-			else 
+			else
 				this.type = Type.A;
-			
+
 			return this;
 		}
 
@@ -86,11 +88,13 @@ public class Dig {
 		}
 
 		/* return Dig object with Querybuilder arg */
+		
 		public Dig build() {
-			DigResponse.setType(digType);
 			
+			DigResponse.setType(digType);
 			if (DigResponse.getURL() == null)
 				DigResponse.setURL(URL);
+			
 			return new Dig(this);
 		}
 

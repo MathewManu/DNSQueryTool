@@ -27,7 +27,7 @@ public class DNSResolver {
 	public void resolve(Dig digQuery) {
 		setName(digQuery.getURL());
 		setType(digQuery.getDigType());
-		//System.out.println("type is ..." +getType() +" " + getName());
+		
 		try {
 			Message response = sendQuery(digQuery);
 			responseHandler(response, digQuery.getIsCnameMsg());
@@ -55,16 +55,13 @@ public class DNSResolver {
 		if (answerSectionCount == 0) {
 			Record[] rec = res.getSectionArray(Section.AUTHORITY);
 			for (int i = 0; i < rec.length; i++) {
-				//System.out.println(rec[i].getAdditionalName());
 				myList.add(rec[i]);
 			}
 			// as of now invoke with first result.
 			// getAdditionalName gives the address from the result.
-			//System.out.println(myList.get(0).getAdditionalName().toString());
 			invokeNextLevelQuery(myList.get(0).getAdditionalName().toString(), isCnameMsg);
 
 		} else {
-			//System.out.println("answer section found !!!!");
 			/*
 			 * There could be cases like the following. 1. Answer section has Both CNAME & A
 			 * record. In that case, returning the A record IP should be good enough 2.
@@ -73,18 +70,18 @@ public class DNSResolver {
 			 */
 			
 			/* in case of NS & MX records, CNAME need not be resolved further 
-			 * output answer section. and any Authority sections present.
+			 * Output answer section, and any Authority sections present.
 			 */
 			Record[] rec = res.getSectionArray(Section.ANSWER);
 			if (getDigType() != null && (getDigType().equalsIgnoreCase("MX") || getDigType().equalsIgnoreCase("NS"))) {
-				//System.out.println("NS OR MX");
+
 				/* adding answer section */
-				for (int i=0; i<rec.length;i++) {
+				for (int i = 0; i < rec.length; i++) {
 					digReponse.addCnameResponseAns(rec[i].toString());
 				}
-				
+
 				Record[] auth = res.getSectionArray(Section.AUTHORITY);
-				for (int i=0; i<auth.length;i++) {
+				for (int i = 0; i < auth.length; i++) {
 					digReponse.addCnameResponseAuth(auth[i].toString());
 				}
 				return;
@@ -94,8 +91,7 @@ public class DNSResolver {
 				if (answerSectionCount == 1 && rec[i].getType() == Type.CNAME) {
 					String cnameLine = rec[i].toString();
 					String cname = cnameLine.substring(cnameLine.indexOf("CNAME") + 5).trim();
-					//System.out.println("found!!!! " + cname);
-					
+					/* CNAME recursive resolve */
 					handleCNAMEresolve(cname);
 				}
 				if (isCnameMsg == true) {
@@ -103,10 +99,7 @@ public class DNSResolver {
 					digReponse.addCnameResponseAns(rec[i].toString());
 					return;
 				}
-				//System.out.println("------->>>>###");
-				//System.out.println(rec[i]);
 				digReponse.addCnameResponseAns(rec[i].toString());
-				//myList.add(rec[i]);
 			}
 		}
 
@@ -118,8 +111,11 @@ public class DNSResolver {
 		new DNSResolver().resolve(cnameQuery);	
 	}
 
+	/*
+	 * Invoke next level with the the new URL
+	 * Call the same function  responseHandler to handle the response
+	 */
 	private void invokeNextLevelQuery(String nextLevelUrl, boolean isCnameMsg) {
-		//System.out.println("Level --->>> ");
 		Message res = null;
 		Message req = Message.newQuery(Record.newRecord(getName(), Type.A, DClass.IN));
 		SimpleResolver resolver = getResolver(nextLevelUrl);
@@ -132,9 +128,12 @@ public class DNSResolver {
 			System.out.println("ERROR: while sending : " + getName() + " " + nextLevelUrl);
 		}
 		responseHandler(res, isCnameMsg);
-
 	}
 	
+	/*
+	 * Resolver is with the URL is returned.
+	 * Root-server is generated from Dig class. Not here.
+	 */
 	private static SimpleResolver getResolver(String name) {
 		SimpleResolver r = null;
 		try {
@@ -150,8 +149,10 @@ public class DNSResolver {
 		return name;
 	}
 
+	/*
+	 * Appending . at the end of URL 
+	 */
 	private void setName(String url) {
-		/* append . if url is not ending with ." */
 		if (!url.substring(url.length() - 1).equals(".")) {
 			url += ".";
 		}
@@ -160,7 +161,6 @@ public class DNSResolver {
 		} catch (TextParseException e) {
 			System.out.println("ERROR while setting Name for URL : " + url);
 		}
-
 	}
 	
 	private void setType(String type) {
@@ -170,6 +170,7 @@ public class DNSResolver {
 	private static String getDigType() {
 		return digType;
 	}
+	
 	public static int getType() {
 		if (digType == null)
 			return Type.A;
@@ -181,6 +182,4 @@ public class DNSResolver {
 			return Type.NS;
 		return Type.A;
 	}
-
-
 }
