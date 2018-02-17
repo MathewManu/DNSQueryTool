@@ -27,7 +27,6 @@ public class DNSResolver {
 	public void resolve(Dig digQuery) {
 		setName(digQuery.getURL());
 		setType(digQuery.getDigType());
-		
 		try {
 			Message response = sendQuery(digQuery);
 			responseHandler(response, digQuery.getIsCnameMsg());
@@ -53,13 +52,19 @@ public class DNSResolver {
 		int answerSectionCount = res.getHeader().getCount(Section.ANSWER);
 		
 		if (answerSectionCount == 0) {
+			
 			Record[] rec = res.getSectionArray(Section.AUTHORITY);
 			for (int i = 0; i < rec.length; i++) {
 				myList.add(rec[i]);
 			}
 			// as of now invoke with first result.
 			// getAdditionalName gives the address from the result.
-			invokeNextLevelQuery(myList.get(0).getAdditionalName().toString(), isCnameMsg);
+			if (myList.get(0).getType() == Type.SOA) {
+				digReponse.addCnameResponseAns(myList.get(0).toString());
+			} else {
+				//System.out.println("invoking next leve");
+				invokeNextLevelQuery(myList.get(0).getAdditionalName().toString(), isCnameMsg);
+			}
 
 		} else {
 			/*
@@ -106,7 +111,7 @@ public class DNSResolver {
 	}
 	
 	private void handleCNAMEresolve(String cname) {
-		
+		System.out.println("handling cname");
 		Dig cnameQuery = new Dig.QueryBuilder(cname).withCNameType(true).withType(getDigType()).build();
 		new DNSResolver().resolve(cnameQuery);	
 	}
@@ -117,13 +122,11 @@ public class DNSResolver {
 	 */
 	private void invokeNextLevelQuery(String nextLevelUrl, boolean isCnameMsg) {
 		Message res = null;
-		Message req = Message.newQuery(Record.newRecord(getName(), Type.A, DClass.IN));
+		Message req = Message.newQuery(Record.newRecord(getName(), getType(), DClass.IN));
 		SimpleResolver resolver = getResolver(nextLevelUrl);
-
+		if (null == resolver) return;
 		try {
-			if (null != resolver) {
-				res = resolver.send(req);
-			}
+			res = resolver.send(req);
 		} catch (IOException e) {
 			System.out.println("ERROR: while sending : " + getName() + " " + nextLevelUrl);
 		}
