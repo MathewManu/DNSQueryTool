@@ -1,4 +1,4 @@
-package dnsquery;
+	package dnsquery;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -13,6 +13,7 @@ public class DigResponse {
 	private static String URL;
 	private static List<String> CNameResponseListAuth = new ArrayList<>();
 	private static List<String> CNameResponseListAns = new ArrayList<>();
+	private static String msgSize;
 	
 	public void addCnameResponseAuth(String res) {
 		CNameResponseListAuth.add(res);
@@ -43,9 +44,15 @@ public class DigResponse {
 
 		System.out.println("\nQuery time : " + (end - startTime) + " msec");
 
+		
+		
 		DateFormat dateFormat = new SimpleDateFormat("yyyy/dd/MM HH:mm:ss");
 		Date date = new Date();
-		System.out.println("WHEN : " + dateFormat.format(date));
+		DateFormat day = new SimpleDateFormat("E");
+		System.out.println("WHEN : "+ day.format(date) +" "+dateFormat.format(date));
+		System.out.println(msgSize);
+		
+		
 	}
 
 	public static void init() {
@@ -58,6 +65,14 @@ public class DigResponse {
 
 	public static void setURL(String url) {
 		URL = url;
+	}
+
+	public static String getMsgSize() {
+		return msgSize;
+	}
+
+	public static void setMsgSize(String msgSize) {
+		DigResponse.msgSize = msgSize;
 	}
 
 	public static String getType() {

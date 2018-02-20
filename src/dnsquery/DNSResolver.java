@@ -50,6 +50,7 @@ public class DNSResolver {
 
 		List<Record> myList = new ArrayList<>();
 		int answerSectionCount = res.getHeader().getCount(Section.ANSWER);
+		digReponse.setMsgSize(getSizeFromResponse(res.toString()));
 		
 		if (answerSectionCount == 0) {
 			
@@ -110,8 +111,21 @@ public class DNSResolver {
 
 	}
 	
+	/*
+	 * Parse msg size from the response msg.
+	 */
+	private String getSizeFromResponse(String msg) {
+		String msgsize = null;
+		int indx = msg.indexOf("Message size");
+		if (indx != -1) {
+			msgsize = msg.substring(indx);
+			// System.out.println(msg.substring(indx));
+		}
+		return msgsize;
+	}
+
 	private void handleCNAMEresolve(String cname) {
-		System.out.println("handling cname");
+		//System.out.println("handling cname");
 		Dig cnameQuery = new Dig.QueryBuilder(cname).withCNameType(true).withType(getDigType()).build();
 		new DNSResolver().resolve(cnameQuery);	
 	}

@@ -5,7 +5,7 @@ import org.xbill.DNS.*;
 public class DnsQuery {
 
 	public static void main(String[] args) throws TextParseException {
-
+		//System.out.println("haiii");
 		if (args.length == 0) {
 			printUsageAndExit();
 		}

@@ -1,17 +1,19 @@
 package dnsquery;
 
 import java.net.UnknownHostException;
+import java.util.Arrays;
+import java.util.List;
 
 import org.xbill.DNS.SimpleResolver;
 import org.xbill.DNS.Type;
 
 /* 
  * Builder class for Dig object.
- * Can be extended for multiple arguments easily
+ * Can be extended for multiple arguments easily.
  * Builder pattern reference: 
  * https://jlordiales.me/2012/12/13/the-builder-pattern-in-practice/
  * 
- * Also select root server as well.
+ * Also select root server
  */
 
 public class Dig {
@@ -98,15 +100,33 @@ public class Dig {
 			return new Dig(this);
 		}
 
-		/* Root server return */
+		/* create a resolver from a root server.
+		 * if one root-server isn't available next one 
+		 * is queried.
+		 */
 		private SimpleResolver getRootServerResolver() {
+			List<String> rootsevers = Arrays.asList("a.root-servers.net", "b.root-servers.net", "c.root-servers.net",
+					"d.root-servers.net", "e.root-servers.net", "f.root-servers.net", "g.root-servers.net",
+					"h.root-servers.net", "i.root-servers.net", "j.root-servers.net", "k.root-servers.net",
+					"l.root-servers.net", "m.root-servers.net");
 			SimpleResolver r = null;
-			try {
-				/* should read from file with retry */
-				r = new SimpleResolver("a.root-servers.net");
-			} catch (UnknownHostException e) {
-				System.out.println("ERROR: Unknown Host : ");
+			int pos = 0;
+			int failure = 0;
+			while (pos == 0 || failure == 1) {
+				try {
+					r = new SimpleResolver(rootsevers.get(pos));
+					failure = 0; pos++;
+				} catch (UnknownHostException e) {
+					System.out.println("Trying next root server... ");
+					failure = 1;
+					pos++;
+					if (pos > 12) {
+						System.out.println("ERROR: could not get root server to query !!!");
+						break;
+					}
+				}
 			}
+			//System.out.println("returning rootserver" + r.toString());
 			return r;
 		}
 
