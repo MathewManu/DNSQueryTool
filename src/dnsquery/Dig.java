@@ -13,7 +13,7 @@ import org.xbill.DNS.Type;
  * Builder pattern reference: 
  * https://jlordiales.me/2012/12/13/the-builder-pattern-in-practice/
  * 
- * Also select root server
+ * Also select a working root server 
  */
 
 public class Dig {
@@ -126,7 +126,6 @@ public class Dig {
 					}
 				}
 			}
-			//System.out.println("returning rootserver" + r.toString());
 			return r;
 		}
 

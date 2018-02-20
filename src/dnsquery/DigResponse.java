@@ -6,6 +6,10 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+/*
+ * This class is used for printing the dig query response 
+ * Has fields to save time, answer & auth section to be printed.
+ */
 public class DigResponse {
 
 	private static long startTime;

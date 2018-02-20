@@ -24,6 +24,12 @@ public class DNSResolver {
 		return digReponse;
 	}
 
+	/*
+	 * send the query with the created resolver.
+	 * call responseHandler with the responsemsg to process
+	 * set URL & type -> so that it can be used while printing the 
+	 * output.
+	 */
 	public void resolve(Dig digQuery) {
 		setName(digQuery.getURL());
 		setType(digQuery.getDigType());
@@ -46,6 +52,9 @@ public class DNSResolver {
 
 	}
 
+	/*
+	 * Handle the response msg from rootserver/tld
+	 */
 	private void responseHandler(Message res, boolean isCnameMsg) {
 
 		List<Record> myList = new ArrayList<>();
@@ -58,12 +67,9 @@ public class DNSResolver {
 			for (int i = 0; i < rec.length; i++) {
 				myList.add(rec[i]);
 			}
-			// as of now invoke with first result.
-			// getAdditionalName gives the address from the result.
 			if (myList.get(0).getType() == Type.SOA) {
 				digReponse.addCnameResponseAns(myList.get(0).toString());
 			} else {
-				//System.out.println("invoking next leve");
 				invokeNextLevelQuery(myList.get(0).getAdditionalName().toString(), isCnameMsg);
 			}
 
@@ -124,14 +130,17 @@ public class DNSResolver {
 		return msgsize;
 	}
 
+	/*
+	 * If there are CNAMEs in the response msg, 
+	 * need to resolve recursively. 
+	 */
 	private void handleCNAMEresolve(String cname) {
-		//System.out.println("handling cname");
 		Dig cnameQuery = new Dig.QueryBuilder(cname).withCNameType(true).withType(getDigType()).build();
 		new DNSResolver().resolve(cnameQuery);	
 	}
 
 	/*
-	 * Invoke next level with the the new URL
+	 * Invoke next level with the the new NS returned.
 	 * Call the same function  responseHandler to handle the response
 	 */
 	private void invokeNextLevelQuery(String nextLevelUrl, boolean isCnameMsg) {
@@ -148,7 +157,7 @@ public class DNSResolver {
 	}
 	
 	/*
-	 * Resolver is with the URL is returned.
+	 * Resolver is with the next level NS is returned.
 	 * Root-server is generated from Dig class. Not here.
 	 */
 	private static SimpleResolver getResolver(String name) {
@@ -167,6 +176,7 @@ public class DNSResolver {
 	}
 
 	/*
+	 * If URLs doesn't have . at the end
 	 * Appending . at the end of URL 
 	 */
 	private void setName(String url) {
